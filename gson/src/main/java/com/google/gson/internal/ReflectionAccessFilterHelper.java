@@ -30,6 +30,30 @@ public class ReflectionAccessFilterHelper {
   // See
   // https://github.com/square/moshi/blob/3c108919ee1cce88a433ffda04eeeddc0341eae7/moshi/src/main/java/com/squareup/moshi/internal/Util.java#L141
 
+  public static ReflectionAccessFilter.FilterResult blockInaccessibleIfJavaType(Class<?> clazz) {
+    return isJavaType(clazz)
+        ? ReflectionAccessFilter.FilterResult.BLOCK_INACCESSIBLE
+        : ReflectionAccessFilter.FilterResult.INDECISIVE;
+  }
+
+  public static ReflectionAccessFilter.FilterResult blockAllIfJavaType(Class<?> clazz) {
+    return isJavaType(clazz)
+        ? ReflectionAccessFilter.FilterResult.BLOCK_ALL
+        : ReflectionAccessFilter.FilterResult.INDECISIVE;
+  }
+
+  public static ReflectionAccessFilter.FilterResult blockAllIfAndroidType(Class<?> clazz) {
+    return isAndroidType(clazz)
+        ? ReflectionAccessFilter.FilterResult.BLOCK_ALL
+        : ReflectionAccessFilter.FilterResult.INDECISIVE;
+  }
+
+  public static ReflectionAccessFilter.FilterResult blockAllIfAnyPlatformType(Class<?> clazz) {
+    return isAnyPlatformType(clazz)
+        ? ReflectionAccessFilter.FilterResult.BLOCK_ALL
+        : ReflectionAccessFilter.FilterResult.INDECISIVE;
+  }
+
   public static boolean isJavaType(Class<?> c) {
     return isJavaType(c.getName());
   }

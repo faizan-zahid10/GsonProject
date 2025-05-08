@@ -82,12 +82,12 @@ public final class JsonStreamParser implements Iterator<JsonElement> {
   @Override
   public JsonElement next() throws JsonParseException {
     if (!hasNext()) {
-      throw new NoSuchElementException();
+      throw new NoSuchElementException("No more elements available in the stream.");
     }
 
     try {
       return Streams.parse(parser);
-    } catch (StackOverflowError | OutOfMemoryError e) {
+    } catch (JsonParseException e) {
       throw new JsonParseException("Failed parsing JSON source to Json", e);
     }
   }
@@ -101,15 +101,15 @@ public final class JsonStreamParser implements Iterator<JsonElement> {
    */
   @Override
   public boolean hasNext() {
-    synchronized (lock) {
-      try {
-        return parser.peek() != JsonToken.END_DOCUMENT;
-      } catch (MalformedJsonException e) {
-        throw new JsonSyntaxException(e);
-      } catch (IOException e) {
-        throw new JsonIOException(e);
-      }
+    //    synchronized (lock) {
+    try {
+      return parser.peek() != JsonToken.END_DOCUMENT;
+    } catch (MalformedJsonException e) {
+      throw new JsonSyntaxException("Malformed JSON in the stream", e);
+    } catch (IOException e) {
+      throw new JsonIOException("I/O error occurred while reading the JSON stream", e);
     }
+    //    }
   }
 
   /**
@@ -120,6 +120,7 @@ public final class JsonStreamParser implements Iterator<JsonElement> {
    */
   @Override
   public void remove() {
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(
+        "remove() operation is not supported in stream parsing");
   }
 }

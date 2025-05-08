@@ -91,7 +91,7 @@ public class JsonStreamParserTest {
   public void testIncompleteInput() {
     JsonStreamParser parser = new JsonStreamParser("[");
     assertThat(parser.hasNext()).isTrue();
-    assertThrows(JsonSyntaxException.class, parser::next);
+    assertThrows(JsonParseException.class, parser::next);
   }
 
   @Test

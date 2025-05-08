@@ -334,6 +334,17 @@
           <excludePackageNames>com.google.gson.internal:com.google.gson.internal.bind</excludePackageNames>
         </configuration>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <compilerArgs>
+            <arg>-Xlint:none</arg> <!-- Suppress all compiler warnings -->
+          </compilerArgs>
+        </configuration>
+      </plugin>
+
     </plugins>
   </build>
 

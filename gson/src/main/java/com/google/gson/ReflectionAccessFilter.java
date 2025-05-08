@@ -113,9 +113,12 @@ public interface ReflectionAccessFilter {
       new ReflectionAccessFilter() {
         @Override
         public FilterResult check(Class<?> rawClass) {
-          return ReflectionAccessFilterHelper.isJavaType(rawClass)
-              ? FilterResult.BLOCK_INACCESSIBLE
-              : FilterResult.INDECISIVE;
+          //          return ReflectionAccessFilterHelper.isJavaType(rawClass)
+          //              ? FilterResult.BLOCK_INACCESSIBLE
+          //              : FilterResult.INDECISIVE;
+
+          //          reuse here as
+          return ReflectionAccessFilterHelper.blockInaccessibleIfJavaType(rawClass);
         }
 
         @Override
@@ -144,9 +147,12 @@ public interface ReflectionAccessFilter {
       new ReflectionAccessFilter() {
         @Override
         public FilterResult check(Class<?> rawClass) {
-          return ReflectionAccessFilterHelper.isJavaType(rawClass)
-              ? FilterResult.BLOCK_ALL
-              : FilterResult.INDECISIVE;
+          //          return ReflectionAccessFilterHelper.isJavaType(rawClass)
+          //              ? FilterResult.BLOCK_ALL
+          //              : FilterResult.INDECISIVE;
+
+          //          reuse here as
+          return ReflectionAccessFilterHelper.blockAllIfJavaType(rawClass);
         }
 
         @Override
@@ -175,9 +181,12 @@ public interface ReflectionAccessFilter {
       new ReflectionAccessFilter() {
         @Override
         public FilterResult check(Class<?> rawClass) {
-          return ReflectionAccessFilterHelper.isAndroidType(rawClass)
-              ? FilterResult.BLOCK_ALL
-              : FilterResult.INDECISIVE;
+          //          return ReflectionAccessFilterHelper.isAndroidType(rawClass)
+          //              ? FilterResult.BLOCK_ALL
+          //              : FilterResult.INDECISIVE;
+
+          //          reuse here as
+          return ReflectionAccessFilterHelper.blockAllIfAndroidType(rawClass);
         }
 
         @Override
@@ -207,9 +216,12 @@ public interface ReflectionAccessFilter {
       new ReflectionAccessFilter() {
         @Override
         public FilterResult check(Class<?> rawClass) {
-          return ReflectionAccessFilterHelper.isAnyPlatformType(rawClass)
-              ? FilterResult.BLOCK_ALL
-              : FilterResult.INDECISIVE;
+          //          return ReflectionAccessFilterHelper.isAnyPlatformType(rawClass)
+          //              ? FilterResult.BLOCK_ALL
+          //              : FilterResult.INDECISIVE;
+
+          //          reuse here as
+          return ReflectionAccessFilterHelper.blockAllIfAnyPlatformType(rawClass);
         }
 
         @Override

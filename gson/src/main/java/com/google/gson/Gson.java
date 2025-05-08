@@ -19,7 +19,7 @@ package com.google.gson;
 import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.internal.ConstructorConstructor;
 import com.google.gson.internal.Excluder;
-import com.google.gson.internal.GsonBuildConfig;
+// import com.google.gson.internal.GsonBuildConfig;
 import com.google.gson.internal.LazilyParsedNumber;
 import com.google.gson.internal.Primitives;
 import com.google.gson.internal.Streams;
@@ -148,7 +148,7 @@ import java.util.concurrent.atomic.AtomicLongArray;
  * @author Jesse Wilson
  */
 public final class Gson {
-
+  public static final String GSON_VERSION = "2.13.0";
   static final boolean DEFAULT_JSON_NON_EXECUTABLE = false;
   // Strictness of `null` is the legacy mode where some Gson APIs are always lenient
   static final Strictness DEFAULT_STRICTNESS = null;
@@ -639,8 +639,7 @@ public final class Gson {
     }
 
     if (candidate == null) {
-      throw new IllegalArgumentException(
-          "GSON (" + GsonBuildConfig.VERSION + ") cannot handle " + type);
+      throw new IllegalArgumentException("GSON (" + GSON_VERSION + ") cannot handle " + type);
     }
 
     if (isInitialAdapterRequest) {
@@ -944,8 +943,7 @@ public final class Gson {
     } catch (IOException e) {
       throw new JsonIOException(e);
     } catch (AssertionError e) {
-      throw new AssertionError(
-          "AssertionError (GSON " + GsonBuildConfig.VERSION + "): " + e.getMessage(), e);
+      throw new AssertionError("AssertionError (GSON " + GSON_VERSION + "): " + e.getMessage(), e);
     } finally {
       writer.setStrictness(oldStrictness);
       writer.setHtmlSafe(oldHtmlSafe);
@@ -1023,8 +1021,7 @@ public final class Gson {
     } catch (IOException e) {
       throw new JsonIOException(e);
     } catch (AssertionError e) {
-      throw new AssertionError(
-          "AssertionError (GSON " + GsonBuildConfig.VERSION + "): " + e.getMessage(), e);
+      throw new AssertionError("AssertionError (GSON " + GSON_VERSION + "): " + e.getMessage(), e);
     } finally {
       writer.setStrictness(oldStrictness);
       writer.setHtmlSafe(oldHtmlSafe);
@@ -1383,8 +1380,7 @@ public final class Gson {
       // TODO(inder): Figure out whether it is indeed right to rethrow this as JsonSyntaxException
       throw new JsonSyntaxException(e);
     } catch (AssertionError e) {
-      throw new AssertionError(
-          "AssertionError (GSON " + GsonBuildConfig.VERSION + "): " + e.getMessage(), e);
+      throw new AssertionError("AssertionError (GSON " + GSON_VERSION + "): " + e.getMessage(), e);
     } finally {
       reader.setStrictness(oldStrictness);
     }

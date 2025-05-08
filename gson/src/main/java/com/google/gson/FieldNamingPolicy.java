@@ -52,7 +52,9 @@ public enum FieldNamingPolicy implements FieldNamingStrategy {
   UPPER_CAMEL_CASE() {
     @Override
     public String translateName(Field f) {
-      return upperCaseFirstLetter(f.getName());
+      //      return upperCaseFirstLetter(f.getName());
+
+      return toUpperCamelCase(f.getName());
     }
   },
 
@@ -72,7 +74,9 @@ public enum FieldNamingPolicy implements FieldNamingStrategy {
   UPPER_CAMEL_CASE_WITH_SPACES() {
     @Override
     public String translateName(Field f) {
-      return upperCaseFirstLetter(separateCamelCase(f.getName(), ' '));
+      //      return upperCaseFirstLetter(separateCamelCase(f.getName(), ' '));
+
+      return toUpperCamelCaseWithSeparator(f.getName(), ' ');
     }
   },
 
@@ -94,7 +98,8 @@ public enum FieldNamingPolicy implements FieldNamingStrategy {
   UPPER_CASE_WITH_UNDERSCORES() {
     @Override
     public String translateName(Field f) {
-      return separateCamelCase(f.getName(), '_').toUpperCase(Locale.ENGLISH);
+      //      return separateCamelCase(f.getName(), '_').toUpperCase(Locale.ENGLISH);
+      return toSeparatedCase(f.getName(), '_', true);
     }
   },
 
@@ -114,7 +119,8 @@ public enum FieldNamingPolicy implements FieldNamingStrategy {
   LOWER_CASE_WITH_UNDERSCORES() {
     @Override
     public String translateName(Field f) {
-      return separateCamelCase(f.getName(), '_').toLowerCase(Locale.ENGLISH);
+      //      return separateCamelCase(f.getName(), '_').toLowerCase(Locale.ENGLISH);
+      return toSeparatedCase(f.getName(), '_', false);
     }
   },
 
@@ -141,7 +147,8 @@ public enum FieldNamingPolicy implements FieldNamingStrategy {
   LOWER_CASE_WITH_DASHES() {
     @Override
     public String translateName(Field f) {
-      return separateCamelCase(f.getName(), '-').toLowerCase(Locale.ENGLISH);
+      //      return separateCamelCase(f.getName(), '-').toLowerCase(Locale.ENGLISH);
+      return toSeparatedCase(f.getName(), '-', false);
     }
   },
 
@@ -168,7 +175,8 @@ public enum FieldNamingPolicy implements FieldNamingStrategy {
   LOWER_CASE_WITH_DOTS() {
     @Override
     public String translateName(Field f) {
-      return separateCamelCase(f.getName(), '.').toLowerCase(Locale.ENGLISH);
+      //      return separateCamelCase(f.getName(), '.').toLowerCase(Locale.ENGLISH);
+      return toSeparatedCase(f.getName(), '.', false);
     }
   };
 
@@ -209,5 +217,21 @@ public enum FieldNamingPolicy implements FieldNamingStrategy {
     }
 
     return s;
+  }
+
+  // New helper methods for reuse are here
+  static String toUpperCamelCase(String name) {
+    return upperCaseFirstLetter(name);
+  }
+
+  static String toUpperCamelCaseWithSeparator(String name, char separator) {
+    return upperCaseFirstLetter(separateCamelCase(name, separator));
+  }
+
+  static String toSeparatedCase(String name, char separator, boolean upperCase) {
+    String separated = separateCamelCase(name, separator);
+    return upperCase
+        ? separated.toUpperCase(Locale.ENGLISH)
+        : separated.toLowerCase(Locale.ENGLISH);
   }
 }
