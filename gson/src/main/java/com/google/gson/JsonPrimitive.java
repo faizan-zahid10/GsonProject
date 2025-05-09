@@ -280,35 +280,72 @@ public final class JsonPrimitive extends JsonElement {
    */
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
-    }
-    JsonPrimitive other = (JsonPrimitive) obj;
-    if (value == null) {
-      return other.value == null;
-    }
-    if (isIntegral(this) && isIntegral(other)) {
-      return (this.value instanceof BigInteger || other.value instanceof BigInteger)
-          ? this.getAsBigInteger().equals(other.getAsBigInteger())
-          : this.getAsNumber().longValue() == other.getAsNumber().longValue();
-    }
-    if (value instanceof Number && other.value instanceof Number) {
-      if (value instanceof BigDecimal && other.value instanceof BigDecimal) {
-        // Uses compareTo to ignore scale of values, e.g. `0` and `0.00` should be considered equal
-        return this.getAsBigDecimal().compareTo(other.getAsBigDecimal()) == 0;
-      }
+    if (this == obj) return true;
+    if (obj == null || getClass() != obj.getClass()) return false;
 
-      double thisAsDouble = this.getAsDouble();
-      double otherAsDouble = other.getAsDouble();
-      // Don't use Double.compare(double, double) because that considers -0.0 and +0.0 not equal
-      return (thisAsDouble == otherAsDouble)
-          || (Double.isNaN(thisAsDouble) && Double.isNaN(otherAsDouble));
+    JsonPrimitive other = (JsonPrimitive) obj;
+
+    if (value == null) return other.value == null;
+    if (other.value == null) return false;
+
+    if (isIntegral(this) && isIntegral(other)) {
+      return compareIntegralValues(this, other);
     }
+
+    if (value instanceof Number && other.value instanceof Number) {
+      return compareDecimalValues(this, other);
+    }
+
     return value.equals(other.value);
   }
+
+  private boolean compareIntegralValues(JsonPrimitive a, JsonPrimitive b) {
+    return (a.value instanceof BigInteger || b.value instanceof BigInteger)
+        ? a.getAsBigInteger().equals(b.getAsBigInteger())
+        : a.getAsNumber().longValue() == b.getAsNumber().longValue();
+  }
+
+  private boolean compareDecimalValues(JsonPrimitive a, JsonPrimitive b) {
+    if (a.value instanceof BigDecimal && b.value instanceof BigDecimal) {
+      return a.getAsBigDecimal().compareTo(b.getAsBigDecimal()) == 0;
+    }
+    double aDouble = a.getAsDouble();
+    double bDouble = b.getAsDouble();
+    return (aDouble == bDouble) || (Double.isNaN(aDouble) && Double.isNaN(bDouble));
+  }
+
+  //  @Override
+  //  public boolean equals(Object obj) {
+  //    if (this == obj) {
+  //      return true;
+  //    }
+  //    if (obj == null || getClass() != obj.getClass()) {
+  //      return false;
+  //    }
+  //    JsonPrimitive other = (JsonPrimitive) obj;
+  //    if (value == null) {
+  //      return other.value == null;
+  //    }
+  //    if (isIntegral(this) && isIntegral(other)) {
+  //      return (this.value instanceof BigInteger || other.value instanceof BigInteger)
+  //          ? this.getAsBigInteger().equals(other.getAsBigInteger())
+  //          : this.getAsNumber().longValue() == other.getAsNumber().longValue();
+  //    }
+  //    if (value instanceof Number && other.value instanceof Number) {
+  //      if (value instanceof BigDecimal && other.value instanceof BigDecimal) {
+  //        // Uses compareTo to ignore scale of values, e.g. `0` and `0.00` should be considered
+  // equal
+  //        return this.getAsBigDecimal().compareTo(other.getAsBigDecimal()) == 0;
+  //      }
+  //
+  //      double thisAsDouble = this.getAsDouble();
+  //      double otherAsDouble = other.getAsDouble();
+  //      // Don't use Double.compare(double, double) because that considers -0.0 and +0.0 not equal
+  //      return (thisAsDouble == otherAsDouble)
+  //          || (Double.isNaN(thisAsDouble) && Double.isNaN(otherAsDouble));
+  //    }
+  //    return value.equals(other.value);
+  //  }
 
   /**
    * Returns true if the specified number is an integral type (Long, Integer, Short, Byte,

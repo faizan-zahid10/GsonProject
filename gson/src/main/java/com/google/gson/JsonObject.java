@@ -83,48 +83,64 @@ public final class JsonObject extends JsonElement {
     return members.remove(property);
   }
 
-  /**
-   * Convenience method to add a string member. The specified value is converted to a {@link
-   * JsonPrimitive} of String.
-   *
-   * @param property name of the member.
-   * @param value the string value associated with the member.
-   */
-  public void addProperty(String property, String value) {
-    add(property, value == null ? JsonNull.INSTANCE : new JsonPrimitive(value));
-  }
+  //  /**
+  //   * Convenience method to add a string member. The specified value is converted to a {@link
+  //   * JsonPrimitive} of String.
+  //   *
+  //   * @param property name of the member.
+  //   * @param value the string value associated with the member.
+  //   */
+  //  public void addProperty(String property, String value) {
+  //    add(property, value == null ? JsonNull.INSTANCE : new JsonPrimitive(value));
+  //  }
+  //
+  //  /**
+  //   * Convenience method to add a number member. The specified value is converted to a {@link
+  //   * JsonPrimitive} of Number.
+  //   *
+  //   * @param property name of the member.
+  //   * @param value the number value associated with the member.
+  //   */
+  //  public void addProperty(String property, Number value) {
+  //    add(property, value == null ? JsonNull.INSTANCE : new JsonPrimitive(value));
+  //  }
+  //
+  //  /**
+  //   * Convenience method to add a boolean member. The specified value is converted to a {@link
+  //   * JsonPrimitive} of Boolean.
+  //   *
+  //   * @param property name of the member.
+  //   * @param value the boolean value associated with the member.
+  //   */
+  //  public void addProperty(String property, Boolean value) {
+  //    add(property, value == null ? JsonNull.INSTANCE : new JsonPrimitive(value));
+  //  }
+  //
+  //  /**
+  //   * Convenience method to add a char member. The specified value is converted to a {@link
+  //   * JsonPrimitive} of Character.
+  //   *
+  //   * @param property name of the member.
+  //   * @param value the char value associated with the member.
+  //   */
+  //  public void addProperty(String property, Character value) {
+  //    add(property, value == null ? JsonNull.INSTANCE : new JsonPrimitive(value));
+  //  }
 
-  /**
-   * Convenience method to add a number member. The specified value is converted to a {@link
-   * JsonPrimitive} of Number.
-   *
-   * @param property name of the member.
-   * @param value the number value associated with the member.
-   */
-  public void addProperty(String property, Number value) {
-    add(property, value == null ? JsonNull.INSTANCE : new JsonPrimitive(value));
-  }
-
-  /**
-   * Convenience method to add a boolean member. The specified value is converted to a {@link
-   * JsonPrimitive} of Boolean.
-   *
-   * @param property name of the member.
-   * @param value the boolean value associated with the member.
-   */
-  public void addProperty(String property, Boolean value) {
-    add(property, value == null ? JsonNull.INSTANCE : new JsonPrimitive(value));
-  }
-
-  /**
-   * Convenience method to add a char member. The specified value is converted to a {@link
-   * JsonPrimitive} of Character.
-   *
-   * @param property name of the member.
-   * @param value the char value associated with the member.
-   */
-  public void addProperty(String property, Character value) {
-    add(property, value == null ? JsonNull.INSTANCE : new JsonPrimitive(value));
+  public void addProperty(String property, Object value) {
+    if (value == null) {
+      add(property, JsonNull.INSTANCE);
+    } else if (value instanceof Number) {
+      add(property, new JsonPrimitive((Number) value));
+    } else if (value instanceof Boolean) {
+      add(property, new JsonPrimitive((Boolean) value));
+    } else if (value instanceof Character) {
+      add(property, new JsonPrimitive((Character) value));
+    } else if (value instanceof String) {
+      add(property, new JsonPrimitive((String) value));
+    } else {
+      throw new IllegalArgumentException("Unsupported property value type: " + value.getClass());
+    }
   }
 
   /**

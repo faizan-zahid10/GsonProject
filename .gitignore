@@ -2,6 +2,7 @@
 .project
 .settings
 eclipsebin
+target
 */target
 pom.xml.*
 release.properties

@@ -31,12 +31,91 @@ import java.math.BigDecimal;
  * @see ToNumberStrategy
  * @since 2.8.9
  */
-public enum ToNumberPolicy implements ToNumberStrategy {
+// public enum ToNumberPolicy implements ToNumberStrategy {
+//
+//  /**
+//   * Using this policy will ensure that numbers will be read as {@link Double} values. This is the
+//   * default strategy used during deserialization of numbers as {@link Object}.
+//   */
+//  DOUBLE {
+//    @Override
+//    public Double readNumber(JsonReader in) throws IOException {
+//      return in.nextDouble();
+//    }
+//  },
+//
+//  /**
+//   * Using this policy will ensure that numbers will be read as a lazily parsed number backed by a
+//   * string. This is the default strategy used during deserialization of numbers as {@link
+// Number}.
+//   */
+//  LAZILY_PARSED_NUMBER {
+//    @Override
+//    public Number readNumber(JsonReader in) throws IOException {
+//      return new LazilyParsedNumber(in.nextString());
+//    }
+//  },
+//
+//  /**
+//   * Using this policy will ensure that numbers will be read as {@link Long} or {@link Double}
+//   * values depending on how JSON numbers are represented: {@code Long} if the JSON number can be
+//   * parsed as a {@code Long} value, or otherwise {@code Double} if it can be parsed as a {@code
+//   * Double} value. If the parsed double-precision number results in a positive or negative
+// infinity
+//   * ({@link Double#isInfinite()}) or a NaN ({@link Double#isNaN()}) value and the {@code
+//   * JsonReader} is not {@link JsonReader#isLenient() lenient}, a {@link MalformedJsonException}
+// is
+//   * thrown.
+//   */
+//  LONG_OR_DOUBLE {
+//    @Override
+//    public Number readNumber(JsonReader in) throws IOException, JsonParseException {
+//      String value = in.nextString();
+//      if (value.indexOf('.') >= 0) {
+//        return parseAsDouble(value, in);
+//      } else {
+//        try {
+//          return Long.parseLong(value);
+//        } catch (NumberFormatException e) {
+//          return parseAsDouble(value, in);
+//        }
+//      }
+//    }
+//
+//    private Number parseAsDouble(String value, JsonReader in) throws IOException {
+//      try {
+//        Double d = Double.valueOf(value);
+//        if ((d.isInfinite() || d.isNaN()) && !in.isLenient()) {
+//          throw new MalformedJsonException(
+//              "JSON forbids NaN and infinities: " + d + "; at path " + in.getPreviousPath());
+//        }
+//        return d;
+//      } catch (NumberFormatException e) {
+//        throw new JsonParseException(
+//            "Cannot parse " + value + "; at path " + in.getPreviousPath(), e);
+//      }
+//    }
+//  },
+//
+//  /**
+//   * Using this policy will ensure that numbers will be read as numbers of arbitrary length using
+//   * {@link BigDecimal}.
+//   */
+//  BIG_DECIMAL {
+//    @Override
+//    public BigDecimal readNumber(JsonReader in) throws IOException {
+//      String value = in.nextString();
+//      try {
+//        return NumberLimits.parseBigDecimal(value);
+//      } catch (NumberFormatException e) {
+//        throw new JsonParseException(
+//            "Cannot parse " + value + "; at path " + in.getPreviousPath(), e);
+//      }
+//    }
+//  }
+// }
 
-  /**
-   * Using this policy will ensure that numbers will be read as {@link Double} values. This is the
-   * default strategy used during deserialization of numbers as {@link Object}.
-   */
+public enum ToNumberPolicy implements ToNumberStrategy {
   DOUBLE {
     @Override
     public Double readNumber(JsonReader in) throws IOException {
@@ -44,10 +123,6 @@ public enum ToNumberPolicy implements ToNumberStrategy {
     }
   },
 
-  /**
-   * Using this policy will ensure that numbers will be read as a lazily parsed number backed by a
-   * string. This is the default strategy used during deserialization of numbers as {@link Number}.
-   */
   LAZILY_PARSED_NUMBER {
     @Override
     public Number readNumber(JsonReader in) throws IOException {
@@ -55,49 +130,22 @@ public enum ToNumberPolicy implements ToNumberStrategy {
     }
   },
 
-  /**
-   * Using this policy will ensure that numbers will be read as {@link Long} or {@link Double}
-   * values depending on how JSON numbers are represented: {@code Long} if the JSON number can be
-   * parsed as a {@code Long} value, or otherwise {@code Double} if it can be parsed as a {@code
-   * Double} value. If the parsed double-precision number results in a positive or negative infinity
-   * ({@link Double#isInfinite()}) or a NaN ({@link Double#isNaN()}) value and the {@code
-   * JsonReader} is not {@link JsonReader#isLenient() lenient}, a {@link MalformedJsonException} is
-   * thrown.
-   */
   LONG_OR_DOUBLE {
     @Override
-    public Number readNumber(JsonReader in) throws IOException, JsonParseException {
+    public Number readNumber(JsonReader in) throws IOException {
       String value = in.nextString();
       if (value.indexOf('.') >= 0) {
-        return parseAsDouble(value, in);
+        return parseDoubleSafely(value, in);
       } else {
         try {
           return Long.parseLong(value);
         } catch (NumberFormatException e) {
-          return parseAsDouble(value, in);
+          return parseDoubleSafely(value, in);
         }
-      }
-    }
-
-    private Number parseAsDouble(String value, JsonReader in) throws IOException {
-      try {
-        Double d = Double.valueOf(value);
-        if ((d.isInfinite() || d.isNaN()) && !in.isLenient()) {
-          throw new MalformedJsonException(
-              "JSON forbids NaN and infinities: " + d + "; at path " + in.getPreviousPath());
-        }
-        return d;
-      } catch (NumberFormatException e) {
-        throw new JsonParseException(
-            "Cannot parse " + value + "; at path " + in.getPreviousPath(), e);
       }
     }
   },
 
-  /**
-   * Using this policy will ensure that numbers will be read as numbers of arbitrary length using
-   * {@link BigDecimal}.
-   */
   BIG_DECIMAL {
     @Override
     public BigDecimal readNumber(JsonReader in) throws IOException {
@@ -108,6 +156,21 @@ public enum ToNumberPolicy implements ToNumberStrategy {
         throw new JsonParseException(
             "Cannot parse " + value + "; at path " + in.getPreviousPath(), e);
       }
+    }
+  };
+
+  /** Shared helper to safely parse a string into a Double with error handling. */
+  private static Double parseDoubleSafely(String value, JsonReader in) throws IOException {
+    try {
+      Double d = Double.valueOf(value);
+      if ((d.isInfinite() || d.isNaN()) && !in.isLenient()) {
+        throw new MalformedJsonException(
+            "JSON forbids NaN and infinities: " + d + "; at path " + in.getPreviousPath());
+      }
+      return d;
+    } catch (NumberFormatException e) {
+      throw new JsonParseException(
+          "Cannot parse " + value + "; at path " + in.getPreviousPath(), e);
     }
   }
 }
