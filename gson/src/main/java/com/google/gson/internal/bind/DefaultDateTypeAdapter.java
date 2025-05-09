@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2008 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.google.gson.internal.bind;
 
 import com.google.gson.Gson;
@@ -57,11 +41,6 @@ public final class DefaultDateTypeAdapter<T extends Date> extends TypeAdapter<T>
 
   /** Factory for {@link Date} adapters which use {@link DateFormat#DEFAULT} as style. */
   public static final TypeAdapterFactory DEFAULT_STYLE_FACTORY =
-      // Because SimpleDateFormat captures the default TimeZone when it was created, let the factory
-      // always create new DefaultDateTypeAdapter instances (which are then cached by the Gson
-      // instances) instead of having a single static DefaultDateTypeAdapter instance
-      // Otherwise the behavior would depend on when an application first loads Gson classes and
-      // which default TimeZone is set at that point, which would be quite brittle
       new TypeAdapterFactory() {
         @SuppressWarnings("unchecked") // we use a runtime check to make sure the 'T's equal
         @Override
@@ -110,29 +89,45 @@ public final class DefaultDateTypeAdapter<T extends Date> extends TypeAdapter<T>
   }
 
   private final DateType<T> dateType;
-
-  /**
-   * List of 1 or more different date formats used for de-serialization attempts. The first of them
-   * is used for serialization as well.
-   */
-  private final List<DateFormat> dateFormats = new ArrayList<>();
+  private final ThreadLocal<List<DateFormat>> dateFormatsThreadLocal =
+      ThreadLocal.withInitial(() -> new ArrayList<>());
 
   private DefaultDateTypeAdapter(DateType<T> dateType, String datePattern) {
     this.dateType = Objects.requireNonNull(dateType);
-    dateFormats.add(new SimpleDateFormat(datePattern, Locale.US));
-    if (!Locale.getDefault().equals(Locale.US)) {
-      dateFormats.add(new SimpleDateFormat(datePattern));
-    }
+    initializeDateFormats(datePattern);
   }
 
   private DefaultDateTypeAdapter(DateType<T> dateType, int dateStyle, int timeStyle) {
     this.dateType = Objects.requireNonNull(dateType);
+    initializeDateFormats(dateStyle, timeStyle);
+  }
+
+  private void initializeDateFormats(String datePattern) {
+    List<DateFormat> dateFormats = dateFormatsThreadLocal.get();
+    dateFormats.clear();
+    dateFormats.add(new SimpleDateFormat(datePattern, Locale.US));
+    addLocaleSpecificDateFormat(datePattern);
+  }
+
+  private void initializeDateFormats(int dateStyle, int timeStyle) {
+    List<DateFormat> dateFormats = dateFormatsThreadLocal.get();
+    dateFormats.clear();
     dateFormats.add(DateFormat.getDateTimeInstance(dateStyle, timeStyle, Locale.US));
-    if (!Locale.getDefault().equals(Locale.US)) {
-      dateFormats.add(DateFormat.getDateTimeInstance(dateStyle, timeStyle));
-    }
+    addLocaleSpecificDateFormat(dateStyle, timeStyle);
     if (JavaVersion.isJava9OrLater()) {
       dateFormats.add(PreJava9DateFormatProvider.getUsDateTimeFormat(dateStyle, timeStyle));
+    }
+  }
+
+  private void addLocaleSpecificDateFormat(String datePattern) {
+    if (!Locale.getDefault().equals(Locale.US)) {
+      dateFormatsThreadLocal.get().add(new SimpleDateFormat(datePattern));
+    }
+  }
+
+  private void addLocaleSpecificDateFormat(int dateStyle, int timeStyle) {
+    if (!Locale.getDefault().equals(Locale.US)) {
+      dateFormatsThreadLocal.get().add(DateFormat.getDateTimeInstance(dateStyle, timeStyle));
     }
   }
 
@@ -143,13 +138,11 @@ public final class DefaultDateTypeAdapter<T extends Date> extends TypeAdapter<T>
       return;
     }
 
-    DateFormat dateFormat = dateFormats.get(0);
-    String dateFormatAsString;
-    // Needs to be synchronized since JDK DateFormat classes are not thread-safe
-    synchronized (dateFormats) {
-      dateFormatAsString = dateFormat.format(value);
+    DateFormat dateFormat = dateFormatsThreadLocal.get().get(0);
+    synchronized (dateFormatsThreadLocal) {
+      String dateFormatAsString = dateFormat.format(value);
+      out.value(dateFormatAsString);
     }
-    out.value(dateFormatAsString);
   }
 
   @Override
@@ -163,36 +156,39 @@ public final class DefaultDateTypeAdapter<T extends Date> extends TypeAdapter<T>
   }
 
   private Date deserializeToDate(JsonReader in) throws IOException {
-    String s = in.nextString();
-    // Needs to be synchronized since JDK DateFormat classes are not thread-safe
-    synchronized (dateFormats) {
+    String dateStr = in.nextString();
+    List<DateFormat> dateFormats = dateFormatsThreadLocal.get();
+
+    synchronized (dateFormatsThreadLocal) {
       for (DateFormat dateFormat : dateFormats) {
         TimeZone originalTimeZone = dateFormat.getTimeZone();
         try {
-          return dateFormat.parse(s);
+          return dateFormat.parse(dateStr);
         } catch (ParseException ignored) {
-          // OK: try the next format
+          // Continue with the next format
         } finally {
           dateFormat.setTimeZone(originalTimeZone);
         }
       }
     }
 
+    return parseISO8601Date(dateStr, in);
+  }
+
+  private Date parseISO8601Date(String dateStr, JsonReader in) throws IOException {
     try {
-      return ISO8601Utils.parse(s, new ParsePosition(0));
+      return ISO8601Utils.parse(dateStr, new ParsePosition(0));
     } catch (ParseException e) {
       throw new JsonSyntaxException(
-          "Failed parsing '" + s + "' as Date; at path " + in.getPreviousPath(), e);
+          "Failed parsing '" + dateStr + "' as Date; at path " + in.getPreviousPath(), e);
     }
   }
 
   @Override
   public String toString() {
-    DateFormat defaultFormat = dateFormats.get(0);
-    if (defaultFormat instanceof SimpleDateFormat) {
-      return SIMPLE_NAME + '(' + ((SimpleDateFormat) defaultFormat).toPattern() + ')';
-    } else {
-      return SIMPLE_NAME + '(' + defaultFormat.getClass().getSimpleName() + ')';
-    }
+    DateFormat defaultFormat = dateFormatsThreadLocal.get().get(0);
+    return defaultFormat instanceof SimpleDateFormat
+        ? SIMPLE_NAME + '(' + ((SimpleDateFormat) defaultFormat).toPattern() + ')'
+        : SIMPLE_NAME + '(' + defaultFormat.getClass().getSimpleName() + ')';
   }
 }
