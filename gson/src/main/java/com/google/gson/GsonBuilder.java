@@ -775,6 +775,25 @@ public final class GsonBuilder {
    *     JsonElement} or any of its subclasses
    * @since 1.7
    */
+  //  @CanIgnoreReturnValue
+  //  public GsonBuilder registerTypeHierarchyAdapter(Class<?> baseType, Object typeAdapter) {
+  //    Objects.requireNonNull(baseType);
+  //    GsonPreconditions.checkArgument(
+  //            typeAdapter instanceof JsonSerializer<?>
+  //                    || typeAdapter instanceof JsonDeserializer<?>
+  //                    || typeAdapter instanceof TypeAdapter<?>);
+  //
+  //    if (typeAdapter instanceof JsonDeserializer || typeAdapter instanceof JsonSerializer) {
+  //      hierarchyFactories.add(TreeTypeAdapter.newTypeHierarchyFactory(baseType, typeAdapter));
+  //    }
+  //    if (typeAdapter instanceof TypeAdapter<?>) {
+  //      @SuppressWarnings({"unchecked", "rawtypes"})
+  //      TypeAdapterFactory factory =
+  //              TypeAdapters.newTypeHierarchyFactory(baseType, (TypeAdapter) typeAdapter);
+  //      factories.add(factory);
+  //    }
+  //    return this;
+  //  }
   @CanIgnoreReturnValue
   public GsonBuilder registerTypeHierarchyAdapter(Class<?> baseType, Object typeAdapter) {
     Objects.requireNonNull(baseType);
@@ -783,6 +802,15 @@ public final class GsonBuilder {
             || typeAdapter instanceof JsonDeserializer<?>
             || typeAdapter instanceof TypeAdapter<?>);
 
+    setAdapterFactory(baseType, typeAdapter, hierarchyFactories, factories);
+    return this;
+  }
+
+  private static void setAdapterFactory(
+      Class<?> baseType,
+      Object typeAdapter,
+      List<TypeAdapterFactory> hierarchyFactories,
+      List<TypeAdapterFactory> factories) {
     if (typeAdapter instanceof JsonDeserializer || typeAdapter instanceof JsonSerializer) {
       hierarchyFactories.add(TreeTypeAdapter.newTypeHierarchyFactory(baseType, typeAdapter));
     }
@@ -792,7 +820,6 @@ public final class GsonBuilder {
           TypeAdapters.newTypeHierarchyFactory(baseType, (TypeAdapter) typeAdapter);
       factories.add(factory);
     }
-    return this;
   }
 
   /**
@@ -874,17 +901,45 @@ public final class GsonBuilder {
    *
    * @return an instance of Gson configured with the options currently set in this builder
    */
+  //  public Gson create() {
+  //    List<TypeAdapterFactory> factories =
+  //        new ArrayList<>(this.factories.size() + this.hierarchyFactories.size() + 3);
+  //    factories.addAll(this.factories);
+  //    Collections.reverse(factories);
+  //
+  //    List<TypeAdapterFactory> hierarchyFactories = new ArrayList<>(this.hierarchyFactories);
+  //    Collections.reverse(hierarchyFactories);
+  //    factories.addAll(hierarchyFactories);
+  //
+  //    addTypeAdaptersForDate(datePattern, dateStyle, timeStyle, factories);
+  //
+  //    return new Gson(
+  //        excluder,
+  //        fieldNamingPolicy,
+  //        new HashMap<>(instanceCreators),
+  //        serializeNulls,
+  //        complexMapKeySerialization,
+  //        generateNonExecutableJson,
+  //        escapeHtmlChars,
+  //        formattingStyle,
+  //        strictness,
+  //        serializeSpecialFloatingPointValues,
+  //        useJdkUnsafe,
+  //        longSerializationPolicy,
+  //        datePattern,
+  //        dateStyle,
+  //        timeStyle,
+  //        new ArrayList<>(this.factories),
+  //        new ArrayList<>(this.hierarchyFactories),
+  //        factories,
+  //        objectToNumberStrategy,
+  //        numberToNumberStrategy,
+  //        new ArrayList<>(reflectionFilters));
+  //  }
+
   public Gson create() {
-    List<TypeAdapterFactory> factories =
-        new ArrayList<>(this.factories.size() + this.hierarchyFactories.size() + 3);
-    factories.addAll(this.factories);
-    Collections.reverse(factories);
-
-    List<TypeAdapterFactory> hierarchyFactories = new ArrayList<>(this.hierarchyFactories);
-    Collections.reverse(hierarchyFactories);
-    factories.addAll(hierarchyFactories);
-
-    addTypeAdaptersForDate(datePattern, dateStyle, timeStyle, factories);
+    List<TypeAdapterFactory> allFactories = collectAllFactories();
+    addTypeAdaptersForDate(datePattern, dateStyle, timeStyle, allFactories);
 
     return new Gson(
         excluder,
@@ -902,47 +957,125 @@ public final class GsonBuilder {
         datePattern,
         dateStyle,
         timeStyle,
-        new ArrayList<>(this.factories),
-        new ArrayList<>(this.hierarchyFactories),
-        factories,
+        new ArrayList<>(factories),
+        new ArrayList<>(hierarchyFactories),
+        allFactories,
         objectToNumberStrategy,
         numberToNumberStrategy,
         new ArrayList<>(reflectionFilters));
   }
 
+  private List<TypeAdapterFactory> collectAllFactories() {
+    List<TypeAdapterFactory> combined =
+        new ArrayList<>(factories.size() + hierarchyFactories.size() + 3);
+
+    // Add user-registered factories in reverse order
+    List<TypeAdapterFactory> reversedFactories = new ArrayList<>(factories);
+    Collections.reverse(reversedFactories);
+    combined.addAll(reversedFactories);
+
+    // Add hierarchy factories in reverse order
+    List<TypeAdapterFactory> reversedHierarchyFactories = new ArrayList<>(hierarchyFactories);
+    Collections.reverse(reversedHierarchyFactories);
+    combined.addAll(reversedHierarchyFactories);
+
+    return combined;
+  }
+
+  //  private static void addTypeAdaptersForDate(
+  //      String datePattern, int dateStyle, int timeStyle, List<TypeAdapterFactory> factories) {
+  //    TypeAdapterFactory dateAdapterFactory;
+  //    boolean sqlTypesSupported = SqlTypesSupport.SUPPORTS_SQL_TYPES;
+  //    TypeAdapterFactory sqlTimestampAdapterFactory = null;
+  //    TypeAdapterFactory sqlDateAdapterFactory = null;
+  //
+  //    if (datePattern != null && !datePattern.trim().isEmpty()) {
+  //      dateAdapterFactory =
+  // DefaultDateTypeAdapter.DateType.DATE.createAdapterFactory(datePattern);
+  //
+  //      if (sqlTypesSupported) {
+  //        sqlTimestampAdapterFactory =
+  //            SqlTypesSupport.TIMESTAMP_DATE_TYPE.createAdapterFactory(datePattern);
+  //        sqlDateAdapterFactory =
+  // SqlTypesSupport.DATE_DATE_TYPE.createAdapterFactory(datePattern);
+  //      }
+  //    } else if (dateStyle != DateFormat.DEFAULT || timeStyle != DateFormat.DEFAULT) {
+  //      dateAdapterFactory =
+  //          DefaultDateTypeAdapter.DateType.DATE.createAdapterFactory(dateStyle, timeStyle);
+  //
+  //      if (sqlTypesSupported) {
+  //        sqlTimestampAdapterFactory =
+  //            SqlTypesSupport.TIMESTAMP_DATE_TYPE.createAdapterFactory(dateStyle, timeStyle);
+  //        sqlDateAdapterFactory =
+  //            SqlTypesSupport.DATE_DATE_TYPE.createAdapterFactory(dateStyle, timeStyle);
+  //      }
+  //    } else {
+  //      return;
+  //    }
+  //
+  //    factories.add(dateAdapterFactory);
+  //    if (sqlTypesSupported) {
+  //      factories.add(sqlTimestampAdapterFactory);
+  //      factories.add(sqlDateAdapterFactory);
+  //    }
+  //  }
+
   private static void addTypeAdaptersForDate(
       String datePattern, int dateStyle, int timeStyle, List<TypeAdapterFactory> factories) {
-    TypeAdapterFactory dateAdapterFactory;
-    boolean sqlTypesSupported = SqlTypesSupport.SUPPORTS_SQL_TYPES;
-    TypeAdapterFactory sqlTimestampAdapterFactory = null;
-    TypeAdapterFactory sqlDateAdapterFactory = null;
 
-    if (datePattern != null && !datePattern.trim().isEmpty()) {
-      dateAdapterFactory = DefaultDateTypeAdapter.DateType.DATE.createAdapterFactory(datePattern);
-
-      if (sqlTypesSupported) {
-        sqlTimestampAdapterFactory =
-            SqlTypesSupport.TIMESTAMP_DATE_TYPE.createAdapterFactory(datePattern);
-        sqlDateAdapterFactory = SqlTypesSupport.DATE_DATE_TYPE.createAdapterFactory(datePattern);
-      }
-    } else if (dateStyle != DateFormat.DEFAULT || timeStyle != DateFormat.DEFAULT) {
-      dateAdapterFactory =
-          DefaultDateTypeAdapter.DateType.DATE.createAdapterFactory(dateStyle, timeStyle);
-
-      if (sqlTypesSupported) {
-        sqlTimestampAdapterFactory =
-            SqlTypesSupport.TIMESTAMP_DATE_TYPE.createAdapterFactory(dateStyle, timeStyle);
-        sqlDateAdapterFactory =
-            SqlTypesSupport.DATE_DATE_TYPE.createAdapterFactory(dateStyle, timeStyle);
-      }
-    } else {
+    if (!shouldAddDateAdapters(datePattern, dateStyle, timeStyle)) {
       return;
     }
 
-    factories.add(dateAdapterFactory);
-    if (sqlTypesSupported) {
-      factories.add(sqlTimestampAdapterFactory);
-      factories.add(sqlDateAdapterFactory);
+    DateAdapterConfig config = createDateAdapterConfig(datePattern, dateStyle, timeStyle);
+    factories.add(config.dateAdapterFactory);
+
+    if (SqlTypesSupport.SUPPORTS_SQL_TYPES) {
+      factories.add(config.sqlTimestampAdapterFactory);
+      factories.add(config.sqlDateAdapterFactory);
     }
+  }
+
+  private static boolean shouldAddDateAdapters(String datePattern, int dateStyle, int timeStyle) {
+    // Only add adapters if either pattern is specified or non-default styles are used
+    return (datePattern != null && !datePattern.trim().isEmpty())
+        || (dateStyle != DateFormat.DEFAULT || timeStyle != DateFormat.DEFAULT);
+  }
+
+  private static DateAdapterConfig createDateAdapterConfig(
+      String datePattern, int dateStyle, int timeStyle) {
+
+    DateAdapterConfig config = new DateAdapterConfig();
+
+    if (datePattern != null && !datePattern.trim().isEmpty()) {
+      config.dateAdapterFactory =
+          DefaultDateTypeAdapter.DateType.DATE.createAdapterFactory(datePattern);
+
+      if (SqlTypesSupport.SUPPORTS_SQL_TYPES) {
+        config.sqlTimestampAdapterFactory =
+            SqlTypesSupport.TIMESTAMP_DATE_TYPE.createAdapterFactory(datePattern);
+        config.sqlDateAdapterFactory =
+            SqlTypesSupport.DATE_DATE_TYPE.createAdapterFactory(datePattern);
+      }
+    } else {
+      config.dateAdapterFactory =
+          DefaultDateTypeAdapter.DateType.DATE.createAdapterFactory(dateStyle, timeStyle);
+
+      if (SqlTypesSupport.SUPPORTS_SQL_TYPES) {
+        config.sqlTimestampAdapterFactory =
+            SqlTypesSupport.TIMESTAMP_DATE_TYPE.createAdapterFactory(dateStyle, timeStyle);
+        config.sqlDateAdapterFactory =
+            SqlTypesSupport.DATE_DATE_TYPE.createAdapterFactory(dateStyle, timeStyle);
+      }
+    }
+
+    return config;
+  }
+
+  // Helper class to group related date adapter factories
+  private static class DateAdapterConfig {
+    TypeAdapterFactory dateAdapterFactory;
+    TypeAdapterFactory sqlTimestampAdapterFactory;
+    TypeAdapterFactory sqlDateAdapterFactory;
   }
 }
